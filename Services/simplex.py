@@ -20,7 +20,9 @@ class Simplex(object):
         Для поиска решения алгоритм использует метода искусственного базиса симплекс-метод.
 
         """
+        self.coloumn_pivot = []
         self.char = char
+        self.check_eq = True
         self.hod_simplex = text
         self.num_vars = num_vars
         self.constraints = constraints
@@ -52,10 +54,12 @@ class Simplex(object):
         for expression in self.constraints:
             if '>=' in expression:
                 num_s_vars += 1
+                self.check_eq = False
 
             elif '<=' in expression:
                 num_s_vars += 1
                 num_r_vars += 1
+                self.check_eq = False
 
             elif '=' in expression:
                num_r_vars += 1
@@ -120,13 +124,14 @@ class Simplex(object):
         nl_char = '\n'
         probel = ' '
         while condition is True:
-            self.print_matrix()
+            self.print_matrix(check=self.check_eq)
             
             key_row = self.find_key_row(key_column = key_column)
             
             self.basic_vars[key_row] = key_column
+            self.coloumn_pivot.append(key_column)
             pivot = self.coeff_matrix[key_row][key_column]
-            self.hod_simplex.insert(self.char, nl_char + f"Следующий опорный элемент {pivot}: {nl_char}")
+            self.hod_simplex.insert(self.char, nl_char + f"Следующий опорный элемент строка/столбец({key_row},{key_column + 1}) {pivot}: {nl_char}")
             self.normalize_to_pivot(key_row, pivot)
             self.make_key_column_zero(key_column, key_row)
 
@@ -134,7 +139,7 @@ class Simplex(object):
             condition = self.coeff_matrix[0][key_column] > 0
 
 
-        self.print_matrix()
+        self.print_matrix(check=self.check_eq)
 
     def find_key_row(self, key_column):
         min_val = float("inf")
@@ -187,6 +192,7 @@ class Simplex(object):
     def objective_minimize(self):
         self.update_objective_function()
 
+        self.hod_simplex.insert(self.char,"*****************\n")
         for row, column in enumerate(self.basic_vars[1:]):
             if self.coeff_matrix[0][column] != 0:
                 self.coeff_matrix[0] = add_row(self.coeff_matrix[0], multiply_const_row(-self.coeff_matrix[0][column], self.coeff_matrix[row+1]))
@@ -195,16 +201,20 @@ class Simplex(object):
         condition = self.coeff_matrix[0][key_column] > 0
 
         while condition is True:
-
+            self.print_matrix(check=False)
             key_row = self.find_key_row(key_column = key_column)
             self.basic_vars[key_row] = key_column
             pivot = self.coeff_matrix[key_row][key_column]
+            nl_char = '\n'
+            probel = ' '
+            self.hod_simplex.insert(self.char, nl_char + f"Следующий опорный элемент строка/столбец({key_row },{key_column + 1}) {pivot}: {nl_char}")
             self.normalize_to_pivot(key_row, pivot)
             self.make_key_column_zero(key_column, key_row)
 
             key_column = max_index(self.coeff_matrix[0])
             condition = self.coeff_matrix[0][key_column] > 0
 
+        self.print_matrix(check=False)
         solution = {}
         for i, var in enumerate(self.basic_vars[1:]):
             if var < self.num_vars:
@@ -224,6 +234,7 @@ class Simplex(object):
                 self.coeff_matrix[0] = add_row(self.coeff_matrix[0], multiply_const_row(-self.coeff_matrix[0][column], self.coeff_matrix[row+1]))
 
         key_column = min_index(self.coeff_matrix[0])
+        self.print_matrix()
         condition = self.coeff_matrix[0][key_column] < 0
 
         while condition is True:
@@ -250,14 +261,21 @@ class Simplex(object):
 
         return solution
     
-    def print_matrix(self):
+    def print_matrix(self,check = True):
         nl_char = '\n'
         probel = ' '
-        for row in self.coeff_matrix:
-            if row == self.coeff_matrix[0]:
-                last = f"{''.join([str(coloumn) + probel for coloumn in row])} {nl_char}"
-            else:    
-                self.hod_simplex.insert(self.char, f"{''.join([str(coloumn) + probel for coloumn in row])} {nl_char}") 
+        if check :
+            for row in self.coeff_matrix:
+                if row == self.coeff_matrix[0]:
+                    last = f"{''.join([str( -1 * row[coloumni]) + probel if coloumni not in self.coloumn_pivot and coloumni + 1 <= self.num_vars or coloumni == len(row)- 1  else '' for coloumni in range(0,len(row))])} {nl_char}"
+                else:     
+                    self.hod_simplex.insert(self.char, f"{''.join([str(row[coloumni]) + probel if coloumni not in self.coloumn_pivot and coloumni + 1 <= self.num_vars or coloumni == len(row)- 1 else ''  for coloumni in range(0,len(row))])} {nl_char}") 
+        else:
+            for row in self.coeff_matrix:
+                if row == self.coeff_matrix[0]:
+                    last = f"{''.join([str(coloumn) + probel for coloumn in row])} {nl_char}"
+                else:    
+                    self.hod_simplex.insert(self.char, f"{''.join([str(coloumn) + probel for coloumn in row])} {nl_char}") 
         self.hod_simplex.insert(self.char,last)
 
 def add_row(row1, row2):
