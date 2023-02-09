@@ -1,26 +1,51 @@
-import re
-from sympy import symbols
-from scipy.optimize import linprog
+from sympy import *
+from fractions import Fraction
 
-class  Equation:
+class GaussAlgorithm:
+    
+    def __init__(self, A, rhs):
+        self.A = A.copy()
+        self.rhs = rhs.copy()
 
-    def  __init__(self, task, ogran):
-        self.task = self.parse_str_task(task)
-        self.ogran = self.parse_str_ogra(ogran)
-        self.symvols = symbols(f'x:{len(self.task)}')
+    def forward_step(self, row_idx):
+        A, rhs = self.A, self.rhs
+        i = row_idx
 
-    def parse_str_task(self,task):
-        splitx1 = re.split('x\d',task.get())
-        # TODO убрать
-        self.signs = re.split('\d',''.join(splitx1))
-        splitx = list(filter(None,re.split('[+,-]',''.join(splitx1))))
-        return splitx
+        if A[i, i] == 0:        
+            for j in range(i, A.rows):
+                if A[j, i] != 0:
+                    A[i, :], A[j, :] = A[j, :], A[i, :]
+                    rhs[i, :], rhs[j, :] = rhs[j, :], rhs[i, :]
+            
+                    break
 
-    def parse_str_ogra(self,ogran):
-        ogrns = []
-        for ogra in ogran:
-            splitx1 = re.split('x\d',ogra.get())
-            signs = re.split('\d',''.join(splitx1))
-            splitx = re.split('[+,-,=,<,>]',''.join(splitx1))
-            ogrns.append((splitx,signs))
-        return ogrns
+
+        rhs[i, :] /= A[i, i]
+        A[i, :] /= A[i, i]
+
+
+
+        for j in range(i+1, A.rows):
+            if A[j, i] != 0:
+                rhs[j, :] -= A[j, i] * rhs[i, :]
+                A[j, :] -= A[j, i] * A[i, :]
+
+        return A, rhs
+
+    def backward_step(self, row_idx):
+        A, rhs = self.A, self.rhs
+        i = row_idx
+        for j in range(i-1, -1, -1):
+            rhs[j, :] -= A[j, i] * rhs[i, :]
+            A[j, :] -= A[j, i] * A[i, :]
+
+
+    def doit(self):
+        A, rhs = self.A, self.rhs
+        for row in range(A.rows):
+            self.forward_step(row)
+        for row in range(A.rows - 1, -1, -1):
+            self.backward_step(row)
+        return rhs
+
+    

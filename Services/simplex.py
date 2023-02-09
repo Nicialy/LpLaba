@@ -3,31 +3,16 @@ from warnings import warn
 
 
 class Simplex(object):
-    def __init__(self, num_vars, constraints, objective_function, text, char):
-        """
-       num_vars: количество переменных
-        уравнения: список строк, представляющих ограничения
-        каждая переменная должна начинаться с x, за которым следует символ подчеркивания
-        и номер
-        например ограничений
-        ['1x_1 + 2x_2 >= 4', '2x_3 + 3x_1 <= 5', 'x_3 + 3x_2 = 6']
-        Обратите внимание, что в x_num число не должно быть больше, чем num_vars.
-        Также в выражениях следует использовать одиночные пробелы.
-        target_function: должен быть кортеж с первым элементом
-        либо «min», либо «max», а вторым элементом будет уравнение
-        например
-        («мин», «2x_1 + 4x_3 + 5x_2»)
-        Для поиска решения алгоритм использует метода искусственного базиса симплекс-метод.
-
-        """
+    def __init__(self, count_vars, constraints, objective_fun, text, char):
+       
         self.coloumn_pivot = []
         self.char = char
         self.check_eq = True
         self.hod_simplex = text
-        self.num_vars = num_vars
+        self.count_vars = count_vars
         self.constraints = constraints
-        self.objective = objective_function[0]
-        self.objective_function = objective_function[1]
+        self.objective = objective_fun[0]
+        self.objective_fun = objective_fun[1]
         self.coeff_matrix, self.r_rows, self.num_s_vars, self.num_r_vars = self.construct_matrix_from_constraints()
         del self.constraints
         self.basic_vars = [0 for i in range(len(self.coeff_matrix))]
@@ -64,11 +49,11 @@ class Simplex(object):
             elif '=' in expression:
                num_r_vars += 1
 
-        total_vars = self.num_vars + num_s_vars + num_r_vars
+        total_vars = self.count_vars + num_s_vars + num_r_vars
 
         coeff_matrix = [[Fraction("0/1") for i in range(total_vars+1)] for j in range(len(self.constraints)+1)]
-        s_index = self.num_vars
-        r_index = self.num_vars + num_s_vars
+        s_index = self.count_vars
+        r_index = self.count_vars + num_s_vars
         r_rows = [] # хранит ненулевой индекс r
         for i in range(1, len(self.constraints)+1):
             constraint = self.constraints[i-1].split(' ')
@@ -104,7 +89,7 @@ class Simplex(object):
 
     def phase1(self):
         # Целевая функция здесь минимизирует r1+ r2 + r3 + ... + rn
-        r_index = self.num_vars + self.num_s_vars
+        r_index = self.count_vars + self.num_s_vars
         for i in range(r_index, len(self.coeff_matrix[0])-1):
             self.coeff_matrix[0][i] = Fraction("-1/1")
         coeff_0 = 0
@@ -112,7 +97,7 @@ class Simplex(object):
             self.coeff_matrix[0] = add_row(self.coeff_matrix[0], self.coeff_matrix[i])
             self.basic_vars[i] = r_index
             r_index += 1
-        s_index = self.num_vars
+        s_index = self.count_vars
         for i in range(1, len(self.basic_vars)):
             if self.basic_vars[i] == 0:
                 self.basic_vars[i] = s_index
@@ -168,29 +153,25 @@ class Simplex(object):
 
     def delete_r_vars(self):
         for i in range(len(self.coeff_matrix)):
-            non_r_length = self.num_vars + self.num_s_vars + 1
+            non_r_length = self.count_vars + self.num_s_vars + 1
             length = len(self.coeff_matrix[i])
             while length != non_r_length:
                 del self.coeff_matrix[i][non_r_length-1]
                 length -= 1
 
-    def update_objective_function(self):
-        objective_function_coeffs = self.objective_function.split()
-        for i in range(len(objective_function_coeffs)):
-            if '_' in objective_function_coeffs[i]:
-                coeff, index = objective_function_coeffs[i].split('_')
-                if objective_function_coeffs[i-1] is '-':
+    def update_objective_fun(self):
+        objective_fun_coeffs = self.objective_fun.split()
+        for i in range(len(objective_fun_coeffs)):
+            if '_' in objective_fun_coeffs[i]:
+                coeff, index = objective_fun_coeffs[i].split('_')
+                if objective_fun_coeffs[i-1] is '-':
                     self.coeff_matrix[0][int(index)-1] = Fraction(coeff[:-1] + "/1")
                 else:
                     self.coeff_matrix[0][int(index)-1] = Fraction("-" +coeff[:-1] + "/1")
 
-    def check_alternate_solution(self):
-        for i in range(len(self.coeff_matrix[0])):
-            if self.coeff_matrix[0][i] and i not in self.basic_vars[1:]:
-                break
 
     def objective_minimize(self):
-        self.update_objective_function()
+        self.update_objective_fun()
 
         self.hod_simplex.insert(self.char,"*****************\n")
         for row, column in enumerate(self.basic_vars[1:]):
@@ -217,17 +198,17 @@ class Simplex(object):
         self.print_matrix(check=False)
         solution = {}
         for i, var in enumerate(self.basic_vars[1:]):
-            if var < self.num_vars:
+            if var < self.count_vars:
                 solution['x_'+str(var+1)] = self.coeff_matrix[i+1][-1]
 
-        for i in range(0, self.num_vars):
+        for i in range(0, self.count_vars):
             if i not in self.basic_vars[1:]:
                 solution['x_'+str(i+1)] = Fraction("0/1")
-        self.check_alternate_solution()
+    
         return solution
 
     def objective_maximize(self):
-        self.update_objective_function()
+        self.update_objective_fun()
 
         for row, column in enumerate(self.basic_vars[1:]):
             if self.coeff_matrix[0][column] != 0:
@@ -250,14 +231,12 @@ class Simplex(object):
 
         solution = {}
         for i, var in enumerate(self.basic_vars[1:]):
-            if var < self.num_vars:
+            if var < self.count_vars:
                 solution['x_'+str(var+1)] = self.coeff_matrix[i+1][-1]
 
-        for i in range(0, self.num_vars):
+        for i in range(0, self.count_vars):
             if i not in self.basic_vars[1:]:
                 solution['x_'+str(i+1)] = Fraction("0/1")
-
-        self.check_alternate_solution()
 
         return solution
     
@@ -267,9 +246,9 @@ class Simplex(object):
         if check :
             for row in self.coeff_matrix:
                 if row == self.coeff_matrix[0]:
-                    last = f"{''.join([str( -1 * row[coloumni]) + probel if coloumni not in self.coloumn_pivot and coloumni + 1 <= self.num_vars or coloumni == len(row)- 1  else '' for coloumni in range(0,len(row))])} {nl_char}"
+                    last = f"{''.join([str( -1 * row[coloumni]) + probel if coloumni not in self.coloumn_pivot and coloumni + 1 <= self.count_vars or coloumni == len(row)- 1  else '' for coloumni in range(0,len(row))])} {nl_char}"
                 else:     
-                    self.hod_simplex.insert(self.char, f"{''.join([str(row[coloumni]) + probel if coloumni not in self.coloumn_pivot and coloumni + 1 <= self.num_vars or coloumni == len(row)- 1 else ''  for coloumni in range(0,len(row))])} {nl_char}") 
+                    self.hod_simplex.insert(self.char, f"{''.join([str(row[coloumni]) + probel if coloumni not in self.coloumn_pivot and coloumni + 1 <= self.count_vars or coloumni == len(row)- 1 else ''  for coloumni in range(0,len(row))])} {nl_char}") 
         else:
             for row in self.coeff_matrix:
                 if row == self.coeff_matrix[0]:

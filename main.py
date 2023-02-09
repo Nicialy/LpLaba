@@ -11,6 +11,7 @@ from fractions import Fraction
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use( 'tkagg' )
+from sympy import symbols, plot_implicit, plot
 
 class App:
         constraints = []
@@ -127,11 +128,7 @@ class App:
             if (self.objective.get().lower().count('x') == 2):
 
                 if self.check_constraint():
-                    from sympy import symbols,plot_implicit, And, Eq, Or
-                    import numpy as np
-                    from matplotlib.patches import FancyArrowPatch
                     
-
                     xn,yn = self.get_gradient()
                     if self.enabled.get() == 0:
                         objective = ('min',self.objective.get())
@@ -141,7 +138,7 @@ class App:
                         objective = ('max',self.objective.get())
 
                     # plot
-                    from sympy import symbols, plot_implicit, plot
+                    
                     x_1 , x_2 = symbols("x y")
                     expr = self.create_constuct(x_1 , x_2)
                     p1 = plot_implicit(expr , show=False,color="r",label = r'Искомая область')
@@ -155,14 +152,14 @@ class App:
                     for constraint in self.constraints:
                         constraints_str.append(constraint.get().lower())
                     try:
-                        Lp_system = Simplex(num_vars=2, constraints=constraints_str, objective_function=objective,text =self.text, char = END)
-                        solution = Lp_system.solution
+                        Lp = Simplex(count_vars=2, constraints=constraints_str, objective_fun=objective,text =self.text, char = END)
+                        solution = Lp.solution
                         
                         x_1s = solution["x_1"]
                         x_2s = solution["x_2"]
                         #plt.plot(float(x_1s), float(x_2s), color = 'r')
                         plt.scatter( float(x_1s), float(x_2s), color='orange', s=40, marker='o',label = rf"Точка: ({x_1s};{x_2s})")
-                        ax.text(0.18, -1.18, f"Ответ: x_1 = {x_1s}; x_2 = {x_2s} f({x_1s};{x_2s}) = {Lp_system.optimize_val}", color="C0")
+                        ax.text(0.18, -1.18, f"Ответ: x_1 = {x_1s}; x_2 = {x_2s} f({x_1s};{x_2s}) = {Lp.optimize_val}", color="C0")
                     except Exception as ex:
                         solution = ex
                         ax.text(0.18, -1.18, f"Ответ {solution}", color="C0")
@@ -316,14 +313,14 @@ class App:
           
             self.text.insert(END, f"Ограничения: {nl_char} {''.join([ tabs+constraint+ nl_char for constraint in constraints_str])} {nl_char}")
             try:
-                Lp_system = Simplex(num_vars=self.objective.get().lower().count('x'), constraints=constraints_str, objective_function=objective,text =self.text, char = END)
-                solution = Lp_system.solution
-                print(Lp_system.optimize_val)
+                Lp = Simplex(count_vars=self.objective.get().lower().count('x'), constraints=constraints_str, objective_fun=objective,text =self.text, char = END)
+                solution = Lp.solution
+                print(Lp.optimize_val)
             except Exception as ex:
                 solution = ex
             
-            #text.insert(END, Lp_system.hod_simplex)
-            self.text.insert(END, f"Ответ: {solution}")
+            #text.insert(END, Lp.hod_simplex)
+            self.text.insert(END, f"Ответ: {solution} {nl_char}")
             self.text.configure(state='disabled')
             
 
