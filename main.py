@@ -11,7 +11,8 @@ from fractions import Fraction
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use( 'tkagg' )
-from sympy import symbols, plot_implicit, plot
+from sympy import symbols, plot_implicit, plot, Matrix,solve
+from Services.graph import GaussAlgorithm
 
 class App:
         constraints = []
@@ -169,17 +170,40 @@ class App:
                     plt.xlabel(r'($x_1$)')
                     plt.ylabel(r'($x_2$)')
                     
-                    # # fill in the fesaible region
-                    # plt.fill_between(x_1, np.minimum(25 - (1.5*x_1), (2*(x_1))), np.minimum(25 - (1.5*x_1), 8), 
-                    # where=x_1 >=7,
-                    # color='green', alpha=0.25)
                     plt.legend(bbox_to_anchor=(1, 1), loc=1, borderaxespad=0.)
 
-                    # # Hide the right and top spines
-                    # #ax.spines['right'].set_visible(False)
-                    # ax.spines['top'].set_visible(False)
                     plt.show()
+            else:
+                    m,b,f = self.get_graphmehod()
+                    dsa = GaussAlgorithm(Matrix(m),Matrix(b),Matrix(f))
+                    dsa.doit()
+                    if dsa.check_matrix():
+                        dsa.podstanovka()
+                        print(dsa.f0)
+                        print(dsa.symbolsList)
+                        p1 = plot_implicit(dsa.recursion() , show=False,color="r",label = r'Искомая область')
+                        fig, ax = plt.subplots()
+                        
+                        self.move_sympyplot_to_axes(p1, ax)
+                        # TODO перписать так как это не верно
+                        xn = dsa.f0.diff(dsa.expressions[-2])
+                        yn = dsa.f0.diff(dsa.expressions[-1])
+                        if self.enabled.get() == 0:
+                            objective = ('min',self.objective.get())
+                            xn = -1 * xn
+                            yn = -1 * yn
+                        else : 
+                            objective = ('max',self.objective.get())
 
+                        ax.arrow(0, 0, float(xn), float(yn), width = 0.050,color="g",label= rf'Нормаль ({xn,yn})')
+                        plt.title("Графическое решение")
+                        plt.show()
+                    
+        def get_graphmehod(self):
+            
+
+            return   [[1,2,5,-1],[1,-1,-1,2]] , [4,1], [-2,-1,-3,-1]
+            
         def create_constuct(self, x_1 , x_2):
             exprs = '(x_1 >=0) & (x_2 >=0)'
             for  constraint1 in  self.constraints:

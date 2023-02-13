@@ -19,9 +19,9 @@ class Simplex(object):
         self.phase1()
         r_index = self.num_r_vars + self.num_s_vars
 
-        for i in self.basic_vars:
-            if i > r_index:
-                raise ValueError("Решения не существует")
+        # for i in self.basic_vars:
+        #     if i > r_index:
+        #         raise ValueError("Решения не существует")
 
         self.delete_r_vars()
 
